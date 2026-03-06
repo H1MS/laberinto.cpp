@@ -153,34 +153,34 @@ void imprimirLaberinto() {
     casilla[N-1][N-1].paredes[2] = false;       //Asegura que la celda de salida no tenga pared abajo para que se vea la salida del laberinto
 
     for (int j = 0; j < N; j++) {               //Imprimi el borde superior del laberinto
-        cout << "+";
-        if (casilla[0][j].paredes[0]) cout << "---";
+        cout << "#";
+        if (casilla[0][j].paredes[0]) cout << "###";
         else cout << "   ";
     }
-    cout << "+\n";                              //Salto de línea después de imprimir el borde superior
+    cout << "#\n";                              //Salto de línea después de imprimir el borde superior
 
     for (int i = 0; i < N; i++) {               //Imprime cada fila del laberinto, incluyendo las paredes verticales y los espacios para las celdas
 
         for (int j = 0; j < N; j++) {
 
-            if (casilla[i][j].paredes[3]) cout << "|";  //Paredes verticales a la izquierda de cada celda
+            if (casilla[i][j].paredes[3]) cout << "#";  //Paredes verticales a la izquierda de cada celda
             else cout << " ";
 
             if (solucion[i][j]) cout << " * "; 
             else cout << "   ";
         }
 
-        if (casilla[i][N-1].paredes[1]) cout << "|";    //Pared vertical a la derecha de la última celda de cada fila
+        if (casilla[i][N-1].paredes[1]) cout << "#";    //Pared vertical a la derecha de la última celda de cada fila
         else cout << " ";
 
         cout << "\n";
 
         for (int j = 0; j < N; j++) {                   //Imprime las paredes horizontales debajo de cada celda
-            cout << "+";
-            if (casilla[i][j].paredes[2]) cout << "---";
+            cout << "#";
+            if (casilla[i][j].paredes[2]) cout << "###";
             else cout << "   ";
         }
-        cout << "+\n";
+        cout << "#\n";
     }
 }
 
@@ -259,3 +259,4 @@ int main() {
 
     return 0;
 }
+
