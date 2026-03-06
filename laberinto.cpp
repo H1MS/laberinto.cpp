@@ -1,110 +1,110 @@
-#include <iostream>
-#include <vector>
-#include <stack>
-#include <cstdlib>
-#include <ctime>
-#include <chrono>
+#include <iostream>     //entrada y salida cin cout
+#include <vector>       //vector para manejar la grilla del laberinto
+#include <stack>        //pila para el DFS
+#include <cstdlib>      //para la funcion de aleatoriedad
+#include <ctime>        //crea una semilla para la aleatoriedad
+#include <chrono>       //para medir el tiempo de ejecución
 
-using namespace std;
-using namespace chrono;
+using namespace std;        //para evitar escribir std:: antes de cada cosa
+using namespace chrono;     //para evitar escribir chrono:: antes de cada cosa
 
-struct Cell {
-    bool visited;
-    bool walls[4]; // 0=arriba,1=derecha,2=abajo,3=izquierda
+struct Celda {               //estructura para representar cada celda del laberinto
+    bool visitado;           //
+    bool paredes[4]; // 0=arriba,1=derecha,2=abajo,3=izquierda
 
-    Cell() {
-        visited = false;
+    Celda() {
+        visitado = false;
         for (int i = 0; i < 4; i++)
-            walls[i] = true;
+            paredes[i] = true;
     }
 };
 
 int N;
-vector<vector<Cell>> grid;
-vector<vector<bool>> solution;
-vector<vector<bool>> visitedSolve;
+vector<vector<Celda>> casilla;          //grilla del laberinto
+vector<vector<bool>> solucion;          //grilla para marcar el camino de la solución      
+vector<vector<bool>> caminoSolucion;    //grilla para marcar las celdas visitadas durante la resolución
 
 //--------------------------------------------------
 // GENERACIÓN
 //--------------------------------------------------
 
-void removeWalls(int x1, int y1, int x2, int y2) {
+void removerpared(int x1, int y1, int x2, int y2) {         //elimina la pared al pasar de una celda a otra, recibe las coordenadas de ambas celdas
 
     if (x1 == x2) {
         if (y1 > y2) {
-            grid[x1][y1].walls[3] = false;
-            grid[x2][y2].walls[1] = false;
+            casilla[x1][y1].paredes[3] = false;
+            casilla[x2][y2].paredes[1] = false;
         } else {
-            grid[x1][y1].walls[1] = false;
-            grid[x2][y2].walls[3] = false;
+            casilla[x1][y1].paredes[1] = false;
+            casilla[x2][y2].paredes[3] = false;
         }
     }
     else if (y1 == y2) {
         if (x1 > x2) {
-            grid[x1][y1].walls[0] = false;
-            grid[x2][y2].walls[2] = false;
+            casilla[x1][y1].paredes[0] = false;
+            casilla[x2][y2].paredes[2] = false;
         } else {
-            grid[x1][y1].walls[2] = false;
-            grid[x2][y2].walls[0] = false;
+            casilla[x1][y1].paredes[2] = false;
+            casilla[x2][y2].paredes[0] = false;
         }
     }
 }
 
-vector<pair<int,int>> getUnvisitedNeighbors(int x, int y) {
+vector<pair<int,int>> vecinosnovisitados(int x, int y) {        //devuelve una lista de vecinos no visitados de la celda actual
 
-    vector<pair<int,int>> neighbors;
+    vector<pair<int,int>> vecinos;                              //vector para almacenar los vecinos no visitados, con coordenadas (x,y)
 
-    if (x > 0 && !grid[x-1][y].visited)
-        neighbors.push_back({x-1, y});
+    if (x > 0 && !casilla[x-1][y].visitado)                     
+        vecinos.push_back({x-1, y});
 
-    if (x < N-1 && !grid[x+1][y].visited)
-        neighbors.push_back({x+1, y});
+    if (x < N-1 && !casilla[x+1][y].visitado)
+        vecinos.push_back({x+1, y});
 
-    if (y > 0 && !grid[x][y-1].visited)
-        neighbors.push_back({x, y-1});
+    if (y > 0 && !casilla[x][y-1].visitado)
+        vecinos.push_back({x, y-1});
 
-    if (y < N-1 && !grid[x][y+1].visited)
-        neighbors.push_back({x, y+1});
+    if (y < N-1 && !casilla[x][y+1].visitado)
+        vecinos.push_back({x, y+1});
 
-    return neighbors;
+    return vecinos;
 }
 
-void generateMaze() {
+void generarlaberinto() {
 
-    stack<pair<int,int>> s;
+    stack<pair<int,int>> s;         //pila para el backtracking, almacena las coordenadas de las celdas visitadas para poder retroceder cuando no haya vecinos disponibles
 
-    int totalCells = N * N;
-    int visitedCells = 1;
+    int totaldeCasillas = N * N;    //total de celdas en el laberinto, para saber cuándo se ha visitado todas las celdas
+    int casillasVisitadas = 1;      //contador de celdas visitadas, inicia en 1 porque se marca la celda inicial como visitada
 
-    int currentX = 0;
-    int currentY = 0;
+    int actualX = 0;               //coordenada 'x' de la celda actual
+    int actualY = 0;               //coordenada 'y' de la celda actual
 
-    grid[currentX][currentY].visited = true;
+    casilla[actualX][actualY].visitado = true;    //marca la celda inicial como visitada
 
-    while (visitedCells < totalCells) {
+    while (casillasVisitadas < totaldeCasillas) {       //mientras no se hayan visitado todas las celdas, sigue generando el laberinto
 
-        auto neighbors = getUnvisitedNeighbors(currentX, currentY);
+        auto vecinos = vecinosnovisitados(actualX, actualY);          //obtiene la lista de vecinos no visitados de la celda actual
 
-        if (!neighbors.empty()) {
+        if (!vecinos.empty()) {                                         //si hay vecinos no visitados, elige uno al azar para continuar la generación del laberinto
 
-            int randIndex = rand() % neighbors.size();
-            int nextX = neighbors[randIndex].first;
-            int nextY = neighbors[randIndex].second;
+            int seleccionador = rand() % vecinos.size();                    //genera un índice aleatorio para seleccionar un vecino de la lista
+            int nuevaX = vecinos[seleccionador].first;                      //coordenada 'x' del vecino seleccionado
+            int nuevaY = vecinos[seleccionador].second;                     //coordenada 'y' del vecino seleccionado
 
-            s.push({currentX, currentY});
-            removeWalls(currentX, currentY, nextX, nextY);
+            s.push({actualX, actualY});                     //guarda la celda actual en la pila antes de moverse a la nueva celda, para poder retroceder si es necesario
+            removerpared(actualX, actualY, nuevaX, nuevaY); 
 
-            currentX = nextX;
-            currentY = nextY;
+            actualX = nuevaX;           //actualiza las coordenadas de la celda actual a la nueva celda seleccionada
+            actualY = nuevaY;
 
-            grid[currentX][currentY].visited = true;
-            visitedCells++;
+            casilla[actualX][actualY].visitado = true;      //marca la nueva celda como visitada
+            casillasVisitadas++;                            //incrementa el contador de celdas visitadas
         }
-        else if (!s.empty()) {
+        else if (!s.empty()) {       //si no hay vecinos no visitados pero la pila no está vacía, retrocede a la última celda visitada para buscar otros caminos
 
-            currentX = s.top().first;
-            currentY = s.top().second;
-            s.pop();
+            actualX = s.top().first;        //actualiza las coordenadas de la celda actual a la última celda guardada en la pila, para retroceder a ella
+            actualY = s.top().second;
+            s.pop();                        //elimina la última celda de la pila después de retroceder a ella
         }
     }
 }
@@ -113,71 +113,71 @@ void generateMaze() {
 // RESOLUCIÓN DFS
 //--------------------------------------------------
 
-bool solveDFS(int x, int y) {
+bool solucionDFS(int x, int y) {               
 
-    if (x == N-1 && y == N-1) {
-        solution[x][y] = true;
+    if (x == N-1 && y == N-1) {             //si se llega a la celda final, marca la lista de casillas que llevan a la salida. Se detiene la busqueda
+        solucion[x][y] = true;
         return true;
     }
 
-    visitedSolve[x][y] = true;
-    solution[x][y] = true;
+    caminoSolucion[x][y] = true;            //Marca las celdas que recorre durante la busqueda, para evitar ciclos y volver a visitar celdas ya exploradas.
+    solucion[x][y] = true;                  //Marca las celdas que llevan a la salida.
 
     // Arriba
-    if (!grid[x][y].walls[0] && x > 0 && !visitedSolve[x-1][y])
-        if (solveDFS(x-1, y)) return true;
+    if (!casilla[x][y].paredes[0] && x > 0 && !caminoSolucion[x-1][y])     //Primero trata de ir hacia arriba 
+        if (solucionDFS(x-1, y)) return true;
 
     // Derecha
-    if (!grid[x][y].walls[1] && y < N-1 && !visitedSolve[x][y+1])
-        if (solveDFS(x, y+1)) return true;
+    if (!casilla[x][y].paredes[1] && y < N-1 && !caminoSolucion[x][y+1])    //Luego hacia la derecha
+        if (solucionDFS(x, y+1)) return true;
 
     // Abajo
-    if (!grid[x][y].walls[2] && x < N-1 && !visitedSolve[x+1][y])
-        if (solveDFS(x+1, y)) return true;
+    if (!casilla[x][y].paredes[2] && x < N-1 && !caminoSolucion[x+1][y])    //Luego hacia abajo
+        if (solucionDFS(x+1, y)) return true;
 
     // Izquierda
-    if (!grid[x][y].walls[3] && y > 0 && !visitedSolve[x][y-1])
-        if (solveDFS(x, y-1)) return true;
+    if (!casilla[x][y].paredes[3] && y > 0 && !caminoSolucion[x][y-1])      //Finalmente hacia la izquierda
+        if (solucionDFS(x, y-1)) return true;
 
-    solution[x][y] = false;
-    return false;
+    solucion[x][y] = false;             //Si ninguna de las direcciones lleva a la salida, desmarca la celda actual como parte de la solución y retrocede
+    return false;   
 }
 
 //--------------------------------------------------
 // IMPRESIÓN
 //--------------------------------------------------
 
-void printMaze() {
+void imprimirLaberinto() {
 
-    grid[0][0].walls[0] = false;
-    grid[N-1][N-1].walls[2] = false;
+    casilla[0][0].paredes[0] = false;           //Asegura que la celda de inicio no tenga pared arriba para que se vea la entrada del laberinto
+    casilla[N-1][N-1].paredes[2] = false;       //Asegura que la celda de salida no tenga pared abajo para que se vea la salida del laberinto
 
-    for (int j = 0; j < N; j++) {
+    for (int j = 0; j < N; j++) {               //Imprimi el borde superior del laberinto
         cout << "+";
-        if (grid[0][j].walls[0]) cout << "---";
+        if (casilla[0][j].paredes[0]) cout << "---";
         else cout << "   ";
     }
-    cout << "+\n";
+    cout << "+\n";                              //Salto de línea después de imprimir el borde superior
 
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < N; i++) {               //Imprime cada fila del laberinto, incluyendo las paredes verticales y los espacios para las celdas
 
         for (int j = 0; j < N; j++) {
 
-            if (grid[i][j].walls[3]) cout << "|";
+            if (casilla[i][j].paredes[3]) cout << "|";  //Paredes verticales a la izquierda de cada celda
             else cout << " ";
 
-            if (solution[i][j]) cout << " * ";
+            if (solucion[i][j]) cout << " * "; 
             else cout << "   ";
         }
 
-        if (grid[i][N-1].walls[1]) cout << "|";
+        if (casilla[i][N-1].paredes[1]) cout << "|";    //Pared vertical a la derecha de la última celda de cada fila
         else cout << " ";
 
         cout << "\n";
 
-        for (int j = 0; j < N; j++) {
+        for (int j = 0; j < N; j++) {                   //Imprime las paredes horizontales debajo de cada celda
             cout << "+";
-            if (grid[i][j].walls[2]) cout << "---";
+            if (casilla[i][j].paredes[2]) cout << "---";
             else cout << "   ";
         }
         cout << "+\n";
@@ -190,38 +190,72 @@ int main() {
 
     srand(time(0));
 
+    const int TAM_BASE = 10;
+
+    N = TAM_BASE;
+
+    casilla = vector<vector<Celda>>(N, vector<Celda>(N));
+    solucion = vector<vector<bool>>(N, vector<bool>(N,false));
+    caminoSolucion = vector<vector<bool>>(N, vector<bool>(N,false));
+
+    auto tiempototal = high_resolution_clock::now();
+
+    auto tiempogeneracion = high_resolution_clock::now();
+    generarlaberinto();
+    auto terminargeneracion = high_resolution_clock::now();
+
+    auto tiemporesolucion = high_resolution_clock::now();
+    solucionDFS(0, 0);
+    auto terminarsolucion = high_resolution_clock::now();
+
+    auto terminartotal = high_resolution_clock::now();
+
+    imprimirLaberinto();
+
+    cout << "\nTiempo generacion: "
+         << duration_cast<microseconds>(terminargeneracion - tiempogeneracion).count()
+         << " Us";
+
+    cout << "\nTiempo resolucion: "
+         << duration_cast<microseconds>(terminarsolucion - tiemporesolucion).count()
+         << " Us";
+
+    cout << "\nTiempo total: "
+         << duration_cast<microseconds>(terminartotal - tiempototal).count()
+         << " Us\n";
+
     cout << "Ingrese tamaño del laberinto: ";
     cin >> N;
 
-    grid = vector<vector<Cell>>(N, vector<Cell>(N));
-    solution = vector<vector<bool>>(N, vector<bool>(N, false));
-    visitedSolve = vector<vector<bool>>(N, vector<bool>(N, false));
+    casilla = vector<vector<Celda>>(N, vector<Celda>(N));               //Matriz de celdas para representar el laberinto
+    solucion = vector<vector<bool>>(N, vector<bool>(N, false));         //Matriz de booleanos para marcar el camino de la solución, inicia con todas las celdas como falsas
+    caminoSolucion = vector<vector<bool>>(N, vector<bool>(N, false));   //Matriz de booleanos para marcar las celdas visitadas durante la resolución.
 
-    auto startTotal = high_resolution_clock::now();
+    auto tiempototal2 = high_resolution_clock::now();
 
-    auto startGen = high_resolution_clock::now();
-    generateMaze();
-    auto endGen = high_resolution_clock::now();
+    auto tiempogeneracion2 = high_resolution_clock::now();
+    generarlaberinto();
+    auto terminargeneracion2 = high_resolution_clock::now();
 
-    auto startSolve = high_resolution_clock::now();
-    solveDFS(0, 0);
-    auto endSolve = high_resolution_clock::now();
+    auto tiemporesolucion2 = high_resolution_clock::now();
+    solucionDFS(0, 0);
+    auto terminarsolucion2 = high_resolution_clock::now();
 
-    auto endTotal = high_resolution_clock::now();
+    auto terminartotal2 = high_resolution_clock::now();
 
-    printMaze();
+    imprimirLaberinto();
 
     cout << "\nTiempo generacion: "
-         << duration_cast<milliseconds>(endGen - startGen).count()
-         << " ms";
+         << duration_cast<microseconds>(terminargeneracion2 - tiempogeneracion2).count()
+         << " Us";
 
     cout << "\nTiempo resolucion: "
-         << duration_cast<milliseconds>(endSolve - startSolve).count()
-         << " ms";
+         << duration_cast<microseconds>(terminarsolucion2 - tiemporesolucion2).count()
+         << " Us";
 
     cout << "\nTiempo total: "
-         << duration_cast<milliseconds>(endTotal - startTotal).count()
-         << " ms\n";
+         << duration_cast<microseconds>(terminartotal2 - tiempototal2).count()
+         << " Us\n";
 
     return 0;
 }
